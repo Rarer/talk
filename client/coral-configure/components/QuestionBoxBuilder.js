@@ -8,7 +8,7 @@ import styles from './QuestionBoxBuilder.css';
 class QuestionBoxBuilder extends React.Component {
   constructor() {
     super();
-    
+
     this.state = {
       loading: true
     };
@@ -17,7 +17,7 @@ class QuestionBoxBuilder extends React.Component {
   componentWillMount() {
     this.loadEditor();
   }
-  
+
   async loadEditor() {
     const MarkdownEditor = await import('coral-framework/components/MarkdownEditor');
 
@@ -79,17 +79,17 @@ class QuestionBoxBuilder extends React.Component {
         </ul>
 
         <QuestionBox
-          className={styles.qb} 
+          className={styles.qb}
           enable={true}
-          icon={questionBoxIcon}  
+          icon={questionBoxIcon}
           content={questionBoxContent}
         />
 
-        <MarkdownEditor 
+        <MarkdownEditor
           value={questionBoxContent}
           onChange={(value) => handleChange({}, {questionBoxContent: value})}
         />
-      
+
       </div>
     );
   }

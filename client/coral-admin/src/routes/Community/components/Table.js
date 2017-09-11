@@ -1,5 +1,6 @@
 import React from 'react';
-import {SelectField, Option} from 'react-mdl-selectfield';
+
+import {SelectField, Option} from 'react-mdl-extra';
 import styles from '../components/Table.css';
 import t from 'coral-framework/services/i18n';
 

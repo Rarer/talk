@@ -1,5 +1,5 @@
 import React from 'react';
-import {Option as OptionMDL} from 'react-mdl-selectfield';
+import {Option as OptionMDL} from 'react-mdl-extra';
 import styles from './Option.css';
 
 const Option = (props) => {

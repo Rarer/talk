@@ -1,5 +1,5 @@
 import React from 'react';
-import {SelectField} from 'react-mdl-selectfield';
+import {SelectField} from 'react-mdl-extra';
 import styles from './Select.css';
 
 const Select = (props) => {

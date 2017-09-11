@@ -1,5 +1,5 @@
 import React from 'react';
-import {SelectField, Option} from 'react-mdl-selectfield';
+import {SelectField, Option} from 'react-mdl-extra';
 import t from 'coral-framework/services/i18n';
 import styles from './Configure.css';
 import {Checkbox, Textfield} from 'react-mdl';

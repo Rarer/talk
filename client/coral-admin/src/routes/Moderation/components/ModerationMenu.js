@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import CommentCount from './CommentCount';
 import styles from './styles.css';
-import {SelectField, Option} from 'react-mdl-selectfield';
+import {SelectField, Option} from 'react-mdl-extra';
 import {Icon} from 'coral-ui';
 import {Link} from 'react-router';
 import cn from 'classnames';
