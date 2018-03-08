@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import SimpleMDE from 'simplemde';
 import cn from 'classnames';
@@ -95,29 +95,35 @@ const config = {
   ],
 };
 
-export default class MarkdownEditor extends Component  {
+export default class MarkdownEditor extends Component {
+  textarea = null;
+  editor = null;
 
-  textarea = null
-  editor = null
-
-  onRef = (ref) => this.textarea = ref
+  onRef = ref => (this.textarea = ref);
 
   componentDidMount() {
     this.editor = new SimpleMDE({
       ...config,
       element: this.textarea,
     });
+
+    // Don't trap the key, to stay accessible.
+    this.editor.codemirror.options.extraKeys['Tab'] = false;
+    this.editor.codemirror.options.extraKeys['Shift-Tab'] = false;
+
     this.editor.codemirror.on('change', this.onChange);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this.props.value !== nextProps.value && nextProps.value !== this.editor.value()) {
+    if (
+      this.props.value !== nextProps.value &&
+      nextProps.value !== this.editor.value()
+    ) {
       this.editor.value(nextProps.value);
     }
   }
 
   componentDidUpdate() {
-
     // Workaround empty render issue.
     // https://github.com/NextStepWebs/simplemde-markdown-editor/issues/313
     this.editor.codemirror.refresh();
@@ -131,7 +137,7 @@ export default class MarkdownEditor extends Component  {
     if (this.props.onChange) {
       this.props.onChange(this.editor.value());
     }
-  }
+  };
 
   render() {
     return (

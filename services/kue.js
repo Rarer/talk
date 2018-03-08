@@ -9,7 +9,8 @@ const kue = require('kue');
 // singleton Queue instance. So you can configure and use only a single Queue
 // object within your node.js process.
 let queue = null;
-const getQueue = () => {
+let isManaging = false;
+const getQueue = ({ managed = false } = {}) => {
   if (queue) {
     return queue;
   }
@@ -17,16 +18,25 @@ const getQueue = () => {
   debug('init the queue');
   queue = kue.createQueue({
     redis: {
-      createClientFactory: () => redis.createClient()
-    }
+      createClientFactory: () => redis.createClient(),
+    },
   });
+
+  // If this is a managed queue, and we aren't managing yet, then start the
+  // management.
+  if (managed && !isManaging) {
+    // Watch for stuck jobs to manage.
+    queue.watchStuckJobs(60000);
+
+    // Mark that we've now started management routines.
+    isManaging = true;
+  }
 
   return queue;
 };
 
 class Task {
-
-  constructor({name, attempts = 3, delay = 1000}) {
+  constructor({ name, attempts = 3, delay = 1000 }) {
     debug(`Created new Task[${name}]`);
 
     this.name = name;
@@ -38,7 +48,6 @@ class Task {
    * Add a new job to the queue.
    */
   create(data) {
-
     debug(`Creating new job for Queue[${this.name}]`);
 
     return new Promise((resolve, reject) => {
@@ -46,8 +55,9 @@ class Task {
         .create(this.name, data)
         .attempts(this.attempts)
         .delay(this.delay)
-        .backoff({type: 'exponential'})
-        .save((err) => {
+        .backoff({ type: 'exponential' })
+        .removeOnComplete(true)
+        .save(err => {
           if (err) {
             return reject(err);
           }
@@ -63,21 +73,28 @@ class Task {
    * Process jobs for the queue.
    */
   process(callback) {
-    return getQueue().process(this.name, callback);
+    // Get the queue in managed mode.
+    return getQueue({ managed: true }).process(this.name, callback);
+  }
+
+  /**
+   * Connect to redis now by getting the queue.
+   */
+  static connect() {
+    // Force setup the redis connection for kue.
+    getQueue();
   }
 
   /**
    * Shutdown running jobs.
    */
   static shutdown() {
-
     debug('Shutting down the Queue');
 
     return new Promise((resolve, reject) => {
-
       // Shutdown and give the queue 5 seconds to shutdown before we start
       // killing jobs.
-      getQueue().shutdown(5000, (err) => {
+      getQueue().shutdown(5000, err => {
         if (err) {
           return reject(err);
         }
@@ -102,8 +119,7 @@ const TestQueue = [];
  * an array which can be inspected.
  */
 class TestTask {
-
-  constructor({name}) {
+  constructor({ name }) {
     this.name = name;
   }
 
@@ -113,29 +129,30 @@ class TestTask {
   create(task) {
     let id = TestQueue.push({
       name: this.name,
-      task
+      task,
     });
 
-    return Promise.resolve({id});
+    return Promise.resolve({ id });
   }
 
   // This is a NO-OP action simply provided to match the Task interface.
-  process() { return null; }
+  process() {
+    return null;
+  }
 
   /**
    * Returns the current tasks for this queue.
    * @return {Array} the tasks in the queue
    */
   get tasks() {
-    return TestQueue
-      .filter((testTask) => testTask.name === this.name)
-      .map((testTask) => testTask.task);
+    return TestQueue.filter(testTask => testTask.name === this.name).map(
+      testTask => testTask.task
+    );
   }
 
   static shutdown() {
     return Task.shutdown();
   }
-
 }
 
 if (process.env.NODE_ENV === 'test') {
@@ -145,3 +162,5 @@ if (process.env.NODE_ENV === 'test') {
   module.exports.Task = Task;
 }
 
+// Add the job reference to the exported params.
+module.exports.Job = kue.Job;

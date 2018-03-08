@@ -1,22 +1,24 @@
-import React, {Component} from 'react';
-import {connect} from 'react-redux';
-import {bindActionCreators} from 'redux';
-import {compose, gql} from 'react-apollo';
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import { compose, gql } from 'react-apollo';
 import withQuery from 'coral-framework/hocs/withQuery';
-import {getDefinitionName} from 'coral-framework/utils';
+import { getDefinitionName } from 'coral-framework/utils';
 import t from 'coral-framework/services/i18n';
 import update from 'immutability-helper';
 import truncate from 'lodash/truncate';
 import NotFoundAsset from '../components/NotFoundAsset';
-import {isPremod, getModPath} from '../../../utils';
+import { isPremod, getModPath } from '../../../utils';
 
-import {withSetCommentStatus} from 'coral-framework/graphql/mutations';
-import {handleCommentChange} from '../graphql';
+import { withSetCommentStatus } from 'coral-framework/graphql/mutations';
+import {
+  handleCommentChange,
+  commentBelongToQueue,
+  cleanUpQueue,
+  subscriptionFields,
+} from '../graphql';
 
-import {fetchSettings} from 'actions/settings';
-import {showBanUserDialog} from 'actions/banUserDialog';
-import {showSuspendUserDialog} from 'actions/suspendUserDialog';
-import {viewUserDetail} from '../../../actions/userDetail';
+import { viewUserDetail } from '../../../actions/userDetail';
 import {
   toggleModal,
   singleView,
@@ -24,18 +26,20 @@ import {
   toggleStorySearch,
   setSortOrder,
   storySearchChange,
-  clearState
+  clearState,
+  selectCommentId,
+  setIndicatorTrack,
 } from 'actions/moderation';
 import withQueueConfig from '../hoc/withQueueConfig';
-import {notify} from 'coral-framework/actions/notification';
+import { notify } from 'coral-framework/actions/notification';
 
-import {Spinner} from 'coral-ui';
+import { Spinner } from 'coral-ui';
 import Moderation from '../components/Moderation';
 import Comment from './Comment';
 import baseQueueConfig from '../queueConfig';
 
 function prepareNotificationText(text) {
-  return truncate(text, {length: 50}).replace('\n', ' ');
+  return truncate(text, { length: 50 }).replace('\n', ' ');
 }
 
 function getAssetId(props) {
@@ -67,15 +71,17 @@ class ModerationContainer extends Component {
   };
 
   get activeTab() {
-
-    const {root: {asset, settings}} = this.props;
+    const { root: { asset, settings } } = this.props;
     const id = getAssetId(this.props);
     const tab = getTab(this.props);
 
-    // Grab premod from asset or from settings
-    const premod = !id ? settings.moderation : asset.settings.moderation;
+    // Grab premod from asset or from settings if it's defined.
+    const setting =
+      id && asset && asset.settings
+        ? asset.settings.moderation
+        : settings.moderation;
 
-    const queue = isPremod(premod) ? 'premod' : 'new';
+    const queue = isPremod(setting) ? 'premod' : 'new';
     const activeTab = tab ? tab : queue;
 
     return activeTab;
@@ -86,56 +92,105 @@ class ModerationContainer extends Component {
       {
         document: COMMENT_ADDED_SUBSCRIPTION,
         variables,
-        updateQuery: (prev, {subscriptionData: {data: {commentAdded: comment}}}) => {
+        updateQuery: (
+          prev,
+          { subscriptionData: { data: { commentAdded: comment } } }
+        ) => {
           return this.handleCommentChange(prev, comment);
         },
       },
       {
         document: COMMENT_ACCEPTED_SUBSCRIPTION,
         variables,
-        updateQuery: (prev, {subscriptionData: {data: {commentAccepted: comment}}}) => {
-          const user = comment.status_history[comment.status_history.length - 1].assigned_by;
-          const notifyText = this.props.auth.user.id === user.id
-            ? ''
-            : t('modqueue.notify_accepted', user.username, prepareNotificationText(comment.body));
+        updateQuery: (
+          prev,
+          { subscriptionData: { data: { commentAccepted: comment } } }
+        ) => {
+          const user =
+            comment.status_history[comment.status_history.length - 1]
+              .assigned_by;
+          const notifyText =
+            this.props.currentUser.id === user.id
+              ? ''
+              : t(
+                  'modqueue.notify_accepted',
+                  user.username,
+                  prepareNotificationText(comment.body)
+                );
           return this.handleCommentChange(prev, comment, notifyText);
         },
       },
       {
         document: COMMENT_REJECTED_SUBSCRIPTION,
         variables,
-        updateQuery: (prev, {subscriptionData: {data: {commentRejected: comment}}}) => {
-          const user = comment.status_history[comment.status_history.length - 1].assigned_by;
-          const notifyText = this.props.auth.user.id === user.id
-            ? ''
-            : t('modqueue.notify_rejected', user.username, prepareNotificationText(comment.body));
+        updateQuery: (
+          prev,
+          { subscriptionData: { data: { commentRejected: comment } } }
+        ) => {
+          const user =
+            comment.status_history[comment.status_history.length - 1]
+              .assigned_by;
+          const notifyText =
+            this.props.currentUser.id === user.id
+              ? ''
+              : t(
+                  'modqueue.notify_rejected',
+                  user.username,
+                  prepareNotificationText(comment.body)
+                );
+          return this.handleCommentChange(prev, comment, notifyText);
+        },
+      },
+      {
+        document: COMMENT_RESET_SUBSCRIPTION,
+        variables,
+        updateQuery: (
+          prev,
+          { subscriptionData: { data: { commentReset: comment } } }
+        ) => {
+          const user =
+            comment.status_history[comment.status_history.length - 1]
+              .assigned_by;
+          const notifyText =
+            this.props.currentUser.id === user.id
+              ? ''
+              : t(
+                  'modqueue.notify_reset',
+                  user.username,
+                  prepareNotificationText(comment.body)
+                );
           return this.handleCommentChange(prev, comment, notifyText);
         },
       },
       {
         document: COMMENT_EDITED_SUBSCRIPTION,
         variables,
-        updateQuery: (prev, {subscriptionData: {data: {commentEdited: comment}}}) => {
-          const notifyText = t('modqueue.notify_edited', comment.user.username, prepareNotificationText(comment.body));
-          return this.handleCommentChange(prev, comment, notifyText);
+        updateQuery: (
+          prev,
+          { subscriptionData: { data: { commentEdited: comment } } }
+        ) => {
+          return this.handleCommentChange(prev, comment);
         },
       },
       {
         document: COMMENT_FLAGGED_SUBSCRIPTION,
         variables,
-        updateQuery: (prev, {subscriptionData: {data: {commentFlagged: comment}}}) => {
-          const user = comment.actions[comment.actions.length - 1].user;
-          const notifyText = t('modqueue.notify_flagged', user.username, prepareNotificationText(comment.body));
-          return this.handleCommentChange(prev, comment, notifyText);
+        updateQuery: (
+          prev,
+          { subscriptionData: { data: { commentFlagged: comment } } }
+        ) => {
+          return this.handleCommentChange(prev, comment);
         },
       },
     ];
 
-    this.subscriptions = parameters.map((param) => this.props.data.subscribeToMore(param));
+    this.subscriptions = parameters.map(param =>
+      this.props.data.subscribeToMoreThrottled(param)
+    );
   }
 
   unsubscribe() {
-    this.subscriptions.forEach((unsubscribe) => unsubscribe());
+    this.subscriptions.forEach(unsubscribe => unsubscribe());
     this.subscriptions = [];
   }
 
@@ -145,34 +200,72 @@ class ModerationContainer extends Component {
   }
 
   componentWillMount() {
+    if (!this.props.data.variables.asset_id) {
+      // Stop activity indicator tracking, as we'll handle it here.
+      this.props.setIndicatorTrack(false);
+    }
     this.props.clearState();
-    this.props.fetchSettings();
     this.subscribeToUpdates();
   }
 
   componentWillUnmount() {
+    if (!this.props.data.variables.asset_id) {
+      // Restart activity indicator tracking.
+      this.props.setIndicatorTrack(true);
+    }
     this.unsubscribe();
   }
 
   componentWillReceiveProps(nextProps) {
+    const currentAssetId = this.props.data.variables.asset_id;
+    const nextAssetId = nextProps.data.variables.asset_id;
 
     // Resubscribe when we change between assets.
-    if(this.props.data.variables.asset_id !== nextProps.data.variables.asset_id) {
+    if (currentAssetId !== nextAssetId) {
       this.resubscribe(nextProps.data.variables);
+    }
+
+    // We are only subscribing to a specific asset_id, so activity indicator
+    // needs to do its own tracking.
+    if (!currentAssetId && nextAssetId) {
+      this.props.setIndicatorTrack(true);
+    }
+
+    // We are subscribing to all comment changes, and as such there is no
+    // need for the activity indicator to do the same.
+    if (currentAssetId && !nextAssetId) {
+      this.props.setIndicatorTrack(false);
     }
   }
 
-  acceptComment = ({commentId}) => {
-    return this.props.setCommentStatus({commentId, status: 'ACCEPTED'});
-  }
+  cleanUpQueue = queue => {
+    if (!this.props.data.loading) {
+      this.props.data.updateQuery(query => {
+        return cleanUpQueue(
+          query,
+          queue,
+          this.props.moderation.sortOrder,
+          this.props.queueConfig
+        );
+      });
+    }
+  };
 
-  rejectComment = ({commentId}) => {
-    return this.props.setCommentStatus({commentId, status: 'REJECTED'});
-  }
+  acceptComment = ({ commentId }) => {
+    return this.props.setCommentStatus({ commentId, status: 'ACCEPTED' });
+  };
 
-  loadMore = (tab) => {
+  rejectComment = ({ commentId }) => {
+    return this.props.setCommentStatus({ commentId, status: 'REJECTED' });
+  };
+
+  commentBelongToQueue = (queue, comment) => {
+    return commentBelongToQueue(queue, comment, this.props.queueConfig);
+  };
+
+  loadMore = tab => {
     const variables = {
-      limit: 10,
+      limit: 20,
       cursor: this.props.root[tab].endCursor,
       sortOrder: this.props.data.variables.sortOrder,
       asset_id: this.props.data.variables.asset_id,
@@ -183,43 +276,41 @@ class ModerationContainer extends Component {
     return this.props.data.fetchMore({
       query: LOAD_MORE_QUERY,
       variables,
-      updateQuery: (prev, {fetchMoreResult:{comments}}) => {
+      updateQuery: (prev, { fetchMoreResult: { comments } }) => {
         return update(prev, {
           [tab]: {
-            nodes: {$push: comments.nodes},
-            hasNextPage: {$set: comments.hasNextPage},
-            startCursor: {$set: comments.startCursor},
-            endCursor: {$set: comments.endCursor},
+            nodes: { $push: comments.nodes },
+            hasNextPage: { $set: comments.hasNextPage },
+            endCursor: { $set: comments.endCursor },
           },
         });
-      }
+      },
     });
   };
 
-  render () {
-    const {root, root: {asset, settings}, data} = this.props;
+  render() {
+    const { root, root: { asset, settings }, data } = this.props;
     const assetId = getAssetId(this.props);
-
-    if (data.error) {
-      return <div>Error</div>;
-    }
 
     if (assetId) {
       if (asset === null) {
-
         // Not found.
         return <NotFoundAsset assetId={assetId} />;
       }
     }
 
-    if(data.loading) {
+    if (data.error) {
+      return <div>{data.error.message}</div>;
+    }
 
+    if (data.loading && data.networkStatus !== 3) {
       // loading.
       return <Spinner />;
     }
 
-    const premodEnabled = assetId ? isPremod(asset.settings.moderation) :
-      isPremod(settings.moderation);
+    const premodEnabled = assetId
+      ? isPremod(asset.settings.moderation)
+      : isPremod(settings.moderation);
 
     const currentQueueConfig = Object.assign({}, this.props.queueConfig);
 
@@ -231,22 +322,29 @@ class ModerationContainer extends Component {
       delete currentQueueConfig.premod;
     }
 
-    return <Moderation
-      {...this.props}
-      getModPath={getModPath}
-      loadMore={this.loadMore}
-      acceptComment={this.acceptComment}
-      rejectComment={this.rejectComment}
-      activeTab={this.activeTab}
-      queueConfig={currentQueueConfig}
-      handleCommentChange={this.handleCommentChange}
-    />;
+    return (
+      <Moderation
+        {...this.props}
+        getModPath={getModPath}
+        loadMore={this.loadMore}
+        acceptComment={this.acceptComment}
+        rejectComment={this.rejectComment}
+        activeTab={this.activeTab}
+        queueConfig={currentQueueConfig}
+        handleCommentChange={this.handleCommentChange}
+        selectedCommentId={this.props.selectedCommentId}
+        commentBelongToQueue={this.commentBelongToQueue}
+        cleanUpQueue={this.cleanUpQueue}
+      />
+    );
   }
 }
+
 const COMMENT_ADDED_SUBSCRIPTION = gql`
   subscription CommentAdded($asset_id: ID){
     commentAdded(asset_id: $asset_id, statuses: null){
       ...${getDefinitionName(Comment.fragments.comment)}
+      ${subscriptionFields}
     }
   }
   ${Comment.fragments.comment}
@@ -256,6 +354,7 @@ const COMMENT_EDITED_SUBSCRIPTION = gql`
   subscription CommentEdited($asset_id: ID){
     commentEdited(asset_id: $asset_id){
       ...${getDefinitionName(Comment.fragments.comment)}
+      ${subscriptionFields}
     }
   }
   ${Comment.fragments.comment}
@@ -265,6 +364,7 @@ const COMMENT_FLAGGED_SUBSCRIPTION = gql`
   subscription CommentFlagged($asset_id: ID){
     commentFlagged(asset_id: $asset_id){
       ...${getDefinitionName(Comment.fragments.comment)}
+      ${subscriptionFields}
     }
   }
   ${Comment.fragments.comment}
@@ -274,14 +374,7 @@ const COMMENT_ACCEPTED_SUBSCRIPTION = gql`
   subscription CommentAccepted($asset_id: ID){
     commentAccepted(asset_id: $asset_id){
       ...${getDefinitionName(Comment.fragments.comment)}
-      status_history {
-        type
-        created_at
-        assigned_by {
-          id
-          username
-        }
-      }
+      ${subscriptionFields}
     }
   }
   ${Comment.fragments.comment}
@@ -291,14 +384,17 @@ const COMMENT_REJECTED_SUBSCRIPTION = gql`
   subscription CommentRejected($asset_id: ID){
     commentRejected(asset_id: $asset_id){
       ...${getDefinitionName(Comment.fragments.comment)}
-      status_history {
-        type
-        created_at
-        assigned_by {
-          id
-          username
-        }
-      }
+      ${subscriptionFields}
+    }
+  }
+  ${Comment.fragments.comment}
+`;
+
+const COMMENT_RESET_SUBSCRIPTION = gql`
+  subscription CommentReset($asset_id: ID){
+    commentReset(asset_id: $asset_id){
+      ...${getDefinitionName(Comment.fragments.comment)}
+      ${subscriptionFields}
     }
   }
   ${Comment.fragments.comment}
@@ -330,27 +426,57 @@ const commentConnectionFragment = gql`
   ${Comment.fragments.comment}
 `;
 
-const withModQueueQuery = withQuery(({queueConfig}) => gql`
+const withModQueueQuery = withQuery(
+  ({ queueConfig }) => gql`
   query CoralAdmin_Moderation($asset_id: ID, $sortOrder: SORT_ORDER, $allAssets: Boolean!, $nullStatuses: [COMMENT_STATUS!]) {
-    ${Object.keys(queueConfig).map((queue) => `
+    ${Object.keys(queueConfig).map(
+      queue => `
       ${queue}: comments(query: {
-        statuses: ${queueConfig[queue].statuses ? `[${queueConfig[queue].statuses.join(', ')}],` : '$nullStatuses'}
-        ${queueConfig[queue].tags ? `tags: ["${queueConfig[queue].tags.join('", "')}"],` : ''}
-        ${queueConfig[queue].action_type ? `action_type: ${queueConfig[queue].action_type}` : ''}
+        statuses: ${
+          queueConfig[queue].statuses
+            ? `[${queueConfig[queue].statuses.join(', ')}],`
+            : '$nullStatuses'
+        }
+        ${
+          queueConfig[queue].tags
+            ? `tags: ["${queueConfig[queue].tags.join('", "')}"],`
+            : ''
+        }
+        ${
+          queueConfig[queue].action_type
+            ? `action_type: ${queueConfig[queue].action_type}`
+            : ''
+        }
         asset_id: $asset_id,
-        sortOrder: $sortOrder
+        sortOrder: $sortOrder,
+        limit: 20,
       }) {
         ...CoralAdmin_Moderation_CommentConnection
       }
-    `)}
-    ${Object.keys(queueConfig).map((queue) => `
+    `
+    )}
+    ${Object.keys(queueConfig).map(
+      queue => `
       ${queue}Count: commentCount(query: {
-        statuses: ${queueConfig[queue].statuses ? `[${queueConfig[queue].statuses.join(', ')}],` : '$nullStatuses'}
-        ${queueConfig[queue].tags ? `tags: ["${queueConfig[queue].tags.join('", "')}"],` : ''}
-        ${queueConfig[queue].action_type ? `action_type: ${queueConfig[queue].action_type}` : ''}
+        statuses: ${
+          queueConfig[queue].statuses
+            ? `[${queueConfig[queue].statuses.join(', ')}],`
+            : '$nullStatuses'
+        }
+        ${
+          queueConfig[queue].tags
+            ? `tags: ["${queueConfig[queue].tags.join('", "')}"],`
+            : ''
+        }
+        ${
+          queueConfig[queue].action_type
+            ? `action_type: ${queueConfig[queue].action_type}`
+            : ''
+        }
         asset_id: $asset_id,
       })
-    `)}
+    `
+    )}
     asset(id: $asset_id) @skip(if: $allAssets) {
       id
       title
@@ -363,51 +489,57 @@ const withModQueueQuery = withQuery(({queueConfig}) => gql`
       organizationName
       moderation
     }
+    me {
+      id
+    }
     ...${getDefinitionName(Comment.fragments.root)}
   }
   ${Comment.fragments.root}
   ${commentConnectionFragment}
-`, {
-  options: (props) => {
-    const id = getAssetId(props);
-    return {
-      variables: {
-        asset_id: id,
-        sortOrder: props.moderation.sortOrder,
-        allAssets: id === null,
-        nullStatuses: null,
-      },
-      fetchPolicy: 'network-only'
-    };
-  },
-});
+`,
+  {
+    options: props => {
+      const id = getAssetId(props);
+      return {
+        variables: {
+          asset_id: id,
+          sortOrder: props.moderation.sortOrder,
+          allAssets: id === null,
+          nullStatuses: null,
+        },
+        fetchPolicy: 'network-only',
+      };
+    },
+  }
+);
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = state => ({
   moderation: state.moderation,
-  settings: state.settings,
-  auth: state.auth,
+  currentUser: state.auth.user,
 });
 
-const mapDispatchToProps = (dispatch) => ({
-  ...bindActionCreators({
-    toggleModal,
-    singleView,
-    fetchSettings,
-    showBanUserDialog,
-    hideShortcutsNote,
-    toggleStorySearch,
-    showSuspendUserDialog,
-    viewUserDetail,
-    setSortOrder,
-    storySearchChange,
-    clearState,
-    notify,
-  }, dispatch),
+const mapDispatchToProps = dispatch => ({
+  ...bindActionCreators(
+    {
+      toggleModal,
+      singleView,
+      hideShortcutsNote,
+      toggleStorySearch,
+      viewUserDetail,
+      setSortOrder,
+      storySearchChange,
+      clearState,
+      notify,
+      selectCommentId,
+      setIndicatorTrack,
+    },
+    dispatch
+  ),
 });
 
 export default compose(
   withQueueConfig(baseQueueConfig),
   connect(mapStateToProps, mapDispatchToProps),
   withSetCommentStatus,
-  withModQueueQuery,
+  withModQueueQuery
 )(ModerationContainer);

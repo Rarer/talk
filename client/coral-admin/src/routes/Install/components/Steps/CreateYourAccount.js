@@ -1,13 +1,14 @@
 import React from 'react';
 import styles from './style.css';
-import {TextField, Button, Spinner} from 'coral-ui';
-
+import { TextField, Button, Spinner } from 'coral-ui';
+import PropTypes from 'prop-types';
 import t from 'coral-framework/services/i18n';
+import cn from 'classnames';
 
-const InitialStep = (props) => {
-  const {handleUserChange, handleUserSubmit, install} = props;
+const InitialStep = props => {
+  const { handleUserChange, handleUserSubmit, install } = props;
   return (
-    <div className={styles.step}>
+    <div className={cn(styles.step, 'talk-install-step-3')}>
       <div className={styles.form}>
         <form onSubmit={handleUserSubmit}>
           <TextField
@@ -51,17 +52,33 @@ const InitialStep = (props) => {
             errorMsg={install.errors.confirmPassword}
           />
 
-          {
-            !props.install.isLoading ?
-              <Button cStyle='black' type="submit" full>{t('install.create.save')}</Button>
-              :
-              <Spinner />
-          }
-          {props.install.installRequest === 'FAILURE' && <div className={styles.error}>Error: {props.install.installRequestError}</div>}
+          {!props.install.isLoading ? (
+            <Button
+              className="talk-install-step-3-save-button"
+              cStyle="black"
+              type="submit"
+              full
+            >
+              {t('install.create.save')}
+            </Button>
+          ) : (
+            <Spinner />
+          )}
+          {props.install.installRequest === 'FAILURE' && (
+            <div className={styles.error}>
+              Error: {props.install.installRequestError}
+            </div>
+          )}
         </form>
       </div>
     </div>
   );
+};
+
+InitialStep.propTypes = {
+  handleUserChange: PropTypes.func,
+  handleUserSubmit: PropTypes.func,
+  install: PropTypes.object,
 };
 
 export default InitialStep;

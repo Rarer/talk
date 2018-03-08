@@ -4,33 +4,24 @@
  * Module dependencies.
  */
 
-const program = require('./commander');
-const scraper = require('../services/scraper');
-const mailer = require('../services/mailer');
 const util = require('./util');
+const program = require('commander');
+const jobs = require('../jobs');
 const mongoose = require('../services/mongoose');
 const kue = require('../services/kue');
 
-util.onshutdown([
-  () => mongoose.disconnect()
-]);
+util.onshutdown([() => mongoose.disconnect()]);
 
 /**
  * Starts the job processor.
  */
 function processJobs() {
-
-  // Start the scraper processor.
-  scraper.process();
-
-  // Start the mail processor.
-  mailer.process();
-
   // The scraper only needs to shutdown when the scraper has actually been
   // started.
-  util.onshutdown([
-    () => kue.Task.shutdown()
-  ]);
+  util.onshutdown([() => kue.Task.shutdown()]);
+
+  // Start the jobs processor.
+  jobs.process();
 }
 
 /**
@@ -39,22 +30,15 @@ function processJobs() {
  * @return {Promise}
  */
 function removeJob(job) {
-  return new Promise((resolve, reject) => job.remove((err) => {
-    if (err) {
-      return reject(err);
-    }
+  return new Promise((resolve, reject) =>
+    job.remove(err => {
+      if (err) {
+        return reject(err);
+      }
 
-    return resolve(job);
-  }));
-}
-
-/**
- * Removes the jobs passed in and returns a promise.
- * @param  {Array} jobs array of jobs
- * @return {Promise}
- */
-function removeJobs(jobs) {
-  return Promise.all(jobs.map(removeJob));
+      return resolve(job);
+    })
+  );
 }
 
 /**
@@ -63,7 +47,7 @@ function removeJobs(jobs) {
  * @param  {Number} limit              limit of jobs to load
  * @return {Promise}
  */
-function rangeJobsByState(state = 'complete', limit) {
+function rangeJobsByState(state, limit) {
   return new Promise((resolve, reject) => {
     kue.Job.rangeByState(state, 0, limit, 'asc', (err, jobs) => {
       if (err) {
@@ -75,22 +59,47 @@ function rangeJobsByState(state = 'complete', limit) {
   });
 }
 
+async function getJobBatch(n, includeStuck) {
+  let jobs = [];
+
+  jobs = await rangeJobsByState('complete', n);
+
+  if (includeStuck) {
+    jobs = jobs.concat(await rangeJobsByState('failed', n));
+  }
+
+  return jobs;
+}
+
 /**
  * Cleans up the jobs that are in the queue.
  */
 async function cleanupJobs(options) {
+  // The scraper only needs to shutdown when the scraper has actually been
+  // started.
+  util.onshutdown([() => kue.Task.shutdown()]);
+
   const n = 100;
 
   try {
-    const joblists = await Promise.all([
-      rangeJobsByState('complete', n),
-      options.stuck ? rangeJobsByState('failed', n) : false
-    ]);
+    // Connect to redis by establishing a queue.
+    kue.Task.connect();
 
-    await joblists.filter((jobs) => jobs).map(removeJobs);
+    let jobCount = 0;
+    let jobs = await getJobBatch(n, options.stuck);
+
+    while (jobs.length > 0) {
+      // Remove all the jobs.
+      await Promise.all(jobs.map(job => removeJob(job)));
+
+      jobCount += jobs.length;
+
+      // Get the next batch of jobs.
+      jobs = await getJobBatch(n, options.stuck);
+    }
 
     util.shutdown();
-    console.log('Removed old jobs');
+    console.log(`Removed ${jobCount} jobs`);
   } catch (err) {
     console.error(err);
     util.shutdown(1);

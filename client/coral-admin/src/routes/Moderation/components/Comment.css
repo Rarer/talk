@@ -10,7 +10,9 @@
   position: relative;
   transition: all 200ms;
   padding: 10px 0;
+  margin-top: 13px;
   min-height: 0;
+  outline: 0;
 
   /*
    Fix rendering issues in Safari by promoting this
@@ -23,6 +25,10 @@
   &:last-child {
     border-bottom: none;
   }
+}
+
+.dangling {
+  background-color: #efefef;
 }
 
 .container {
@@ -66,9 +72,9 @@
   flex: 1;
   color: black;
   max-width: 500px;
-  word-wrap: break-word;
   font-weight: 300;
   font-size: 16px;
+  word-break: break-all;
 }
 
 .created {
@@ -127,7 +133,6 @@
   color: #063b9a;
   cursor: pointer;
   font-weight: normal;
-  margin-left: 10px;
   white-space: nowrap;
 
   &:hover {
@@ -137,7 +142,6 @@
 
   i {
     font-size: 12px;
-    top: 2px;
     position: relative;
   }
 }
@@ -178,4 +182,18 @@
       border-bottom: 1px solid #e0e0e0;
     }
   }
+}
+
+.commentContent {
+  display: flex;
+
+  blockquote {
+    font-size: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+  }
+}
+
+.commentContentFooter {
+  flex: 1;
 }
