@@ -1,3 +1,4 @@
+
 /**
   This is a client index example file and it could look like this:
   
@@ -20,6 +21,6 @@ import MyPluginComponent from './components/MyPluginComponent';
 
 export default {
   slots: {
-    stream: [MyPluginComponent],
-  },
+    stream: [MyPluginComponent]
+  }
 };

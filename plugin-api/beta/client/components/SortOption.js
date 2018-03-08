@@ -19,6 +19,7 @@ export default class SortOption extends React.Component {
 }
 
 SortOption.propTypes = {
+
   // A simple callback to be called when clicking on this sort option.
   setSort: PropTypes.func.isRequired,
 

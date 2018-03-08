@@ -207,7 +207,7 @@
 
   .toastify__body {
     color: white;
-    overflow-x: auto;
+    overflow-x: scroll;
     font-size: 15px;
     font-weight: 400;
   }

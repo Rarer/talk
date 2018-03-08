@@ -1,12 +1,9 @@
 import queryString from 'query-string';
 import pym from 'pym.js';
 import EventEmitter from 'eventemitter2';
-import { buildUrl } from 'coral-framework/utils/url';
+import {buildUrl} from 'coral-framework/utils/url';
 import Snackbar from './Snackbar';
-import {
-  createStorage,
-  connectStorageToPym,
-} from 'coral-framework/services/storage';
+import {createStorage, connectStorageToPym} from 'coral-framework/services/storage';
 
 const NOTIFICATION_OFFSET = 200;
 
@@ -15,7 +12,7 @@ function buildStreamIframeUrl(talkBaseUrl, query) {
   let url = [
     talkBaseUrl,
     talkBaseUrl.match(/\/$/) ? '' : '/', // make sure no double-'/' if opts.talk already ends with '/'
-    'embed/stream?',
+    'embed/stream?'
   ].join('');
 
   url += queryString.stringify(query);
@@ -25,8 +22,7 @@ function buildStreamIframeUrl(talkBaseUrl, query) {
 
 // Get dimensions of viewport.
 function viewportDimensions() {
-  let e = window,
-    a = 'inner';
+  let e = window, a = 'inner';
   if (!('innerWidth' in window)) {
     a = 'client';
     e = document.documentElement || document.body;
@@ -34,31 +30,25 @@ function viewportDimensions() {
 
   return {
     width: e[`${a}Width`],
-    height: e[`${a}Height`],
+    height: e[`${a}Height`]
   };
 }
 
 export default class Stream {
-  constructor(el, talkBaseUrl, query, config) {
-    this.query = query;
+  constructor(el, talkBaseUrl, query, opts) {
 
-    // Extract the non-opts opts from the object.
-    const {
-      events = null,
-      snackBarStyles = null,
-      onAuthChanged = null,
-      ...opts
-    } = config;
+    // Create and save the options.
 
     this.opts = opts;
+    this.query = query;
 
-    this.emitter = new EventEmitter({ wildcard: true });
+    this.emitter = new EventEmitter({wildcard: true});
     this.pym = new pym.Parent(el.id, buildStreamIframeUrl(talkBaseUrl, query), {
       title: opts.title,
       id: `${el.id}_iframe`,
-      name: `${el.id}_iframe`,
+      name: `${el.id}_iframe`
     });
-    this.snackBar = new Snackbar(snackBarStyles || {});
+    this.snackBar = new Snackbar(opts.snackBarStyles || {});
 
     // Workaround: IOS Safari ignores `width` but respects `min-width` value.
     this.pym.el.firstChild.style.width = '1px';
@@ -66,7 +56,7 @@ export default class Stream {
 
     // Resize parent iframe height when child height changes
     let cachedHeight;
-    this.pym.onMessage('height', height => {
+    this.pym.onMessage('height', (height) => {
       if (height !== cachedHeight) {
         this.pym.el.firstChild.style.height = `${height}px`;
         cachedHeight = height;
@@ -74,8 +64,8 @@ export default class Stream {
     });
 
     // Attach to the events emitted by the pym parent.
-    if (events) {
-      events(this.emitter);
+    if (opts.events) {
+      opts.events(this.emitter);
     }
 
     this.pym.onMessage('getConfig', () => {
@@ -83,9 +73,9 @@ export default class Stream {
     });
 
     // If the auth changes, and someone is listening for it, then re-emit it.
-    if (onAuthChanged) {
-      this.pym.onMessage('coral-auth-changed', message => {
-        onAuthChanged(message ? JSON.parse(message) : null);
+    if (opts.onAuthChanged) {
+      this.pym.onMessage('coral-auth-changed', (message) => {
+        opts.onAuthChanged(message ? JSON.parse(message) : null);
       });
     }
 
@@ -100,21 +90,21 @@ export default class Stream {
       });
 
       // Remove the commentId url param.
-      const url = buildUrl({ ...location, search });
+      const url = buildUrl({...location, search});
 
       // Change the url.
       window.history.replaceState({}, document.title, url);
     });
 
     // Remove the permalink comment id from the hash.
-    this.pym.onMessage('coral-view-comment', id => {
+    this.pym.onMessage('coral-view-comment', (id) => {
       const search = queryString.stringify({
         ...queryString.parse(location.search),
         commentId: id,
       });
 
       // Remove the commentId url param.
-      const url = buildUrl({ ...location, search });
+      const url = buildUrl({...location, search});
 
       // Change the url.
       window.history.replaceState({}, document.title, url);
@@ -122,7 +112,7 @@ export default class Stream {
 
     // Helps child show notifications at the right scrollTop.
     this.pym.onMessage('getPosition', () => {
-      const { height } = viewportDimensions();
+      const {height} = viewportDimensions();
       let position = height + document.body.scrollTop;
 
       if (position > NOTIFICATION_OFFSET) {
@@ -133,32 +123,21 @@ export default class Stream {
     });
 
     // When end-user clicks link in iframe, open it in parent context
-    this.pym.onMessage('navigate', url => {
+    this.pym.onMessage('navigate', (url) => {
       window.open(url, '_blank').focus();
     });
 
     // Pass events from iframe to the event emitter.
-    this.pym.onMessage('event', raw => {
-      const { eventName, value } = JSON.parse(raw);
+    this.pym.onMessage('event', (raw) => {
+      const {eventName, value} = JSON.parse(raw);
       this.emitter.emit(eventName, value);
     });
 
     // If the user clicks outside the embed, then tell the embed.
     document.addEventListener('click', this.handleClick.bind(this), true);
 
-    // Listens to local storage requests on pym and relay it to local storage.
-    connectStorageToPym(
-      createStorage('localStorage'),
-      this.pym,
-      'localStorage'
-    );
-
-    // Listens to session storage requests on pym and relay it to session storage.
-    connectStorageToPym(
-      createStorage('sessionStorage'),
-      this.pym,
-      'sessionStorage'
-    );
+    // Listens to storage requests on pym and relay it to local storage.
+    connectStorageToPym(createStorage(), this.pym);
   }
 
   login(token) {
@@ -170,6 +149,7 @@ export default class Stream {
   }
 
   remove() {
+
     // Remove the event listeners.
     document.removeEventListener('click', this.handleClick.bind(this));
     this.emitter.removeAllListeners();

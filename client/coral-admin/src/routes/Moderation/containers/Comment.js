@@ -1,12 +1,9 @@
-import { gql } from 'react-apollo';
+import {gql} from 'react-apollo';
 import Comment from '../components/Comment';
 import CommentLabels from '../../../containers/CommentLabels';
 import CommentDetails from '../../../containers/CommentDetails';
 import withFragments from 'coral-framework/hocs/withFragments';
-import {
-  getSlotFragmentSpreads,
-  getDefinitionName,
-} from 'coral-framework/utils';
+import {getSlotFragmentSpreads, getDefinitionName} from 'coral-framework/utils';
 
 const slots = [
   'adminCommentInfoBar',
@@ -18,12 +15,7 @@ const slots = [
 export default withFragments({
   root: gql`
     fragment CoralAdmin_ModerationComment_root on RootQuery {
-      settings {
-        wordlist {
-          banned
-          suspect
-        }
-      }
+      __typename
       ${getSlotFragmentSpreads(slots, 'root')}
       ...${getDefinitionName(CommentLabels.fragments.root)}
       ...${getDefinitionName(CommentDetails.fragments.root)}
@@ -40,6 +32,7 @@ export default withFragments({
       user {
         id
         username
+        status
       }
       asset {
         id
@@ -49,9 +42,6 @@ export default withFragments({
       editing {
         edited
       }
-      status_history {
-        type
-      }
       hasParent
       ${getSlotFragmentSpreads(slots, 'comment')}
       ...${getDefinitionName(CommentLabels.fragments.comment)}
@@ -59,5 +49,5 @@ export default withFragments({
     }
     ${CommentLabels.fragments.comment}
     ${CommentDetails.fragments.comment}
-  `,
+  `
 })(Comment);

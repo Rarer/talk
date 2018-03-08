@@ -1,9 +1,14 @@
 const path = require('path');
-const { pluginsPath } = require('./plugins');
+const {pluginsPath} = require('./plugins');
 
-const buildTargets = ['coral-admin', 'coral-docs'];
+const buildTargets = [
+  'coral-admin',
+  'coral-docs'
+];
 
-const buildEmbeds = ['stream'];
+const buildEmbeds = [
+  'stream'
+];
 
 // jest.config.js
 module.exports = {
@@ -12,22 +17,16 @@ module.exports = {
   modulePaths: [
     '<rootDir>/plugins',
     '<rootDir>/client',
-    ...buildTargets.map(target =>
-      path.join('<rootDir>', 'client', target, 'src')
-    ),
-    ...buildEmbeds.map(embed =>
-      path.join('<rootDir>', 'client', `coral-embed-${embed}`, 'src')
-    ),
+    ...buildTargets.map((target) => path.join('<rootDir>', 'client', target, 'src')),
+    ...buildEmbeds.map((embed) => path.join('<rootDir>', 'client', `coral-embed-${embed}`, 'src')),
   ],
   moduleFileExtensions: ['js', 'jsx', 'json', 'yaml', 'yml'],
   moduleDirectories: ['node_modules'],
 
   transform: {
     '^.+\\.jsx?$': 'babel-jest',
-    '\\.ya?ml$': '<rootDir>/test/client/yamlTransformer.js',
+    '\\.ya?ml$': '<rootDir>/test/client/yamlTransformer.js'
   },
-
-  testResultsProcessor: process.env.JEST_REPORTER,
 
   moduleNameMapper: {
     '^plugin-api\\/(.*)$': '<rootDir>/plugin-api/$1',
@@ -35,6 +34,6 @@ module.exports = {
     '^pluginsConfig$': pluginsPath,
 
     '\\.(scss|css|less)$': 'identity-obj-proxy',
-    '\\.(gif|ttf|eot|svg)$': '<rootDir>/test/client/fileMock.js',
-  },
+    '\\.(gif|ttf|eot|svg)$': '<rootDir>/test/client/fileMock.js'
+  }
 };

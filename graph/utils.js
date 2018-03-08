@@ -1,4 +1,7 @@
-const { GraphQLObjectType, GraphQLInterfaceType } = require('graphql');
+const {
+  GraphQLObjectType,
+  GraphQLInterfaceType
+} = require('graphql');
 
 /**
  * Iterates over each field in a schema.
@@ -15,16 +18,14 @@ const { GraphQLObjectType, GraphQLInterfaceType } = require('graphql');
  * @return {void}
  */
 const forEachField = (schema, fn, options = {}) => {
-  const { includeResolveType = false } = options;
+  const {includeResolveType = false} = options;
 
   const typeMap = schema.getTypeMap();
-  Object.keys(typeMap).forEach(typeName => {
+  Object.keys(typeMap).forEach((typeName) => {
     const type = typeMap[typeName];
 
-    if (
-      type instanceof GraphQLObjectType ||
-      type instanceof GraphQLInterfaceType
-    ) {
+    if (type instanceof GraphQLObjectType || type instanceof GraphQLInterfaceType) {
+
       // Here we capture the change to extract the resolve type. We pass this
       // with the `isResolveType = true` to introduce the specific beheviour.
       if (includeResolveType && 'resolveType' in type) {
@@ -32,7 +33,7 @@ const forEachField = (schema, fn, options = {}) => {
       }
 
       const fields = type.getFields();
-      Object.keys(fields).forEach(fieldName => {
+      Object.keys(fields).forEach((fieldName) => {
         const field = fields[fieldName];
         fn(field, typeName, fieldName);
       });

@@ -1,13 +1,15 @@
-import login from './login';
+import auth from './auth';
+import asset from './asset';
 import embed from './embed';
-import configure from './configure';
+import config from './config';
 import stream from './stream';
-import profile from './profile';
+import {reducer as commentBox} from '../../../talk-plugin-commentbox';
 
 export default {
-  login,
+  auth,
+  asset,
+  commentBox,
   embed,
-  configure,
+  config,
   stream,
-  profile,
 };

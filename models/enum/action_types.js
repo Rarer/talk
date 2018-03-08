@@ -1,1 +1,4 @@
-module.exports = ['LIKE', 'FLAG'];
+module.exports = [
+  'LIKE',
+  'FLAG'
+];

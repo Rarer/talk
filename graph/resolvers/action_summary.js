@@ -1,14 +1,12 @@
 const ActionSummary = {
-  __resolveType({ action_type }) {
+  __resolveType({action_type}) {
     switch (action_type) {
-      case 'FLAG':
-        return 'FlagActionSummary';
-      case 'DONTAGREE':
-        return 'DontAgreeActionSummary';
-      default:
-        return undefined;
+    case 'FLAG':
+      return 'FlagActionSummary';
+    case 'DONTAGREE':
+      return 'DontAgreeActionSummary';
     }
-  },
+  }
 };
 
 module.exports = ActionSummary;

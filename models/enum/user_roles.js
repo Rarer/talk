@@ -1,1 +1,5 @@
-module.exports = ['ADMIN', 'MODERATOR', 'STAFF', 'COMMENTER'];
+module.exports = [
+  'ADMIN',
+  'MODERATOR',
+  'STAFF'
+];

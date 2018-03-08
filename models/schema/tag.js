@@ -8,51 +8,46 @@ const USER_ROLES = require('../enum/user_roles');
  * The Mongo schema for a Tag.
  * @type {Schema}
  */
-const TagSchema = new Schema(
-  {
-    // The actual name of the tag.
-    name: String,
+const TagSchema = new Schema({
 
-    // Contains permission data.
-    permissions: {
-      // Determines if this tag is public or not.
-      public: {
-        type: Boolean,
-        default: true,
-      },
+  // The actual name of the tag.
+  name: String,
 
-      // Determines if the owner of the Model can add/remove this tag on their own
-      // resources.
-      self: Boolean,
+  // Contains permission data.
+  permissions: {
 
-      // Determines other roles that are allowed to set this tag on other
-      // resources.
-      roles: [
-        {
-          type: String,
-          enum: USER_ROLES,
-          default: [],
-        },
-      ],
+    // Determines if this tag is public or not.
+    public: {
+      type: Boolean,
+      default: true
     },
 
-    // A list of all the model types that this tag can be added to.
-    models: [
-      {
-        type: String,
-        enum: ITEM_TYPES,
-      },
-    ],
+    // Determines if the owner of the Model can add/remove this tag on their own
+    // resources.
+    self: Boolean,
 
-    // The date for when the tag was created.
-    created_at: {
-      type: Date,
-      default: Date,
-    },
+    // Determines other roles that are allowed to set this tag on other
+    // resources.
+    roles: [{
+      type: String,
+      enum: USER_ROLES,
+      default: []
+    }]
   },
-  {
-    _id: false,
+
+  // A list of all the model types that this tag can be added to.
+  models: [{
+    type: String,
+    enum: ITEM_TYPES
+  }],
+
+  // The date for when the tag was created.
+  created_at: {
+    type: Date,
+    default: Date
   }
-);
+}, {
+  _id: false
+});
 
 module.exports = TagSchema;

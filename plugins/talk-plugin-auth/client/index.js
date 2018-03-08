@@ -1,15 +1,14 @@
-import UserBox from './stream/containers/UserBox';
-import SignInButton from './stream/containers/SignInButton';
-import SetUsernameDialog from './stream/containers/SetUsernameDialog';
+import UserBox from './components/UserBox';
+import SignInButton from './components/SignInButton';
+import SignInContainer from './components/SignInContainer';
+import ChangeUserNameContainer from './components/ChangeUsername';
 import translations from './translations.yml';
-import Login from './login/containers/Main';
-import reducer from './login/reducer';
 
 export default {
-  reducer,
   translations,
   slots: {
-    stream: [UserBox, SignInButton, SetUsernameDialog],
-    login: [Login],
-  },
+    stream: [UserBox, SignInButton, ChangeUserNameContainer],
+    login: [SignInContainer]
+  }
 };
+

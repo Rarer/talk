@@ -3,20 +3,24 @@ const _ = require('lodash');
 const SettingsService = require('./settings');
 const Errors = require('../errors');
 const memoize = require('lodash/memoize');
-const { escapeRegExp } = require('./regex');
+
+/**
+ * Escape string for special regular expression characters.
+ */
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
 
 /**
  * Generate a regulare expression that catches the `phrases`.
  */
 function generateRegExp(phrases) {
   const inner = phrases
-    .map(phrase =>
-      phrase
-        .split(/\s+/)
-        .map(word => escapeRegExp(word))
+    .map((phrase) =>
+      phrase.split(/\s+/)
+        .map((word) => escapeRegExp(word))
         .join('[\\s"?!.]+')
-    )
-    .join('|');
+    ).join('|');
 
   return new RegExp(`(^|[^\\w])(${inner})(?=[^\\w]|$)`, 'iu');
 }
@@ -24,9 +28,7 @@ function generateRegExp(phrases) {
 /**
  * Memoized version of generateRegExp.
  */
-const generateRegExpMemoized = memoize(generateRegExp, phrases =>
-  phrases.join(',')
-);
+const generateRegExpMemoized = memoize(generateRegExp, (phrases) => phrases.join(','));
 
 /**
  * Never matching regexp that exits immediately.
@@ -38,6 +40,7 @@ const neverMatch = /(?!)/;
  * @type {Object}
  */
 class Wordlist {
+
   constructor() {
     this.regexp = {
       banned: neverMatch,
@@ -49,10 +52,13 @@ class Wordlist {
    * Loads wordlists in from the database
    */
   load() {
-    return SettingsService.retrieve().then(settings => {
-      // Insert the settings wordlist.
-      this.upsert(settings.wordlist);
-    });
+    return SettingsService
+      .retrieve()
+      .then((settings) => {
+
+        // Insert the settings wordlist.
+        this.upsert(settings.wordlist);
+      });
   }
 
   /**
@@ -60,17 +66,17 @@ class Wordlist {
    * @param  {Array} list list of words to be set to the wordlist
    */
   upsert(lists) {
+
     // Add the words to this array, but also lowercase the words so that an
     // easy comparison can take place.
-    ['banned', 'suspect'].forEach(k => {
+    ['banned', 'suspect'].forEach((k) => {
       if (!(k in lists)) {
         return;
       }
 
-      this.regexp[k] =
-        lists[k] && lists[k].length > 0
-          ? generateRegExpMemoized(lists[k])
-          : neverMatch;
+      this.regexp[k] = lists[k] && lists[k].length > 0
+        ? generateRegExpMemoized(lists[k])
+        : neverMatch;
 
       debug(`Added ${lists[k].length} words to the ${k} wordlist.`);
     });
@@ -86,15 +92,14 @@ class Wordlist {
 
     // If the field doesn't exist in the body, then it can't be profane!
     if (!phrase) {
+
       // Return that there wasn't a profane word here.
       return errors;
     }
 
     // Check if the field contains a banned word.
     if (this.regexp.banned.test(phrase)) {
-      debug(
-        `the field "${fieldName}" contained a phrase "${phrase}" which contained a banned word/phrase`
-      );
+      debug(`the field "${fieldName}" contained a phrase "${phrase}" which contained a banned word/phrase`);
 
       errors.banned = Errors.ErrContainsProfanity;
 
@@ -105,9 +110,7 @@ class Wordlist {
 
     // Check if the field contains a suspected word.
     if (this.regexp.suspect.test(phrase)) {
-      debug(
-        `the field "${fieldName}" contained a phrase "${phrase}" which contained a suspected word/phrase`
-      );
+      debug(`the field "${fieldName}" contained a phrase "${phrase}" which contained a suspected word/phrase`);
 
       errors.suspect = Errors.ErrContainsProfanity;
 
@@ -123,6 +126,7 @@ class Wordlist {
    * Perform the filtering based on the loaded wordlists.
    */
   filter(body, ...fields) {
+
     // Start with the sensible default that the content does not contain
     // profanity.
     let errors = {};
@@ -135,6 +139,7 @@ class Wordlist {
 
       // If the field doesn't exist in the body, then it can't be profane!
       if (!phrase) {
+
         // Return that there wasn't a profane word here.
         continue;
       }
@@ -143,6 +148,7 @@ class Wordlist {
 
       // Check if the field contains a banned word.
       if (errors.banned) {
+
         // Stop looping through the fields now, we discovered the worst possible
         // situation (a banned word).
         break;
@@ -150,6 +156,7 @@ class Wordlist {
 
       // Check if the field contains a banned word.
       if (errors.suspect) {
+
         // Continue looping through the fields now, we discovered a possible bad
         // word (suspect).
         continue;
@@ -165,11 +172,13 @@ class Wordlist {
   static usernameCheck(username) {
     const wl = new Wordlist();
 
-    return wl.load().then(() => {
-      if (wl.regexp.banned.test(username)) {
-        return Errors.ErrContainsProfanity;
-      }
-    });
+    return wl
+      .load()
+      .then(() => {
+        if (wl.regexp.banned.test(username)) {
+          return Errors.ErrContainsProfanity;
+        }
+      });
   }
 
   /**
@@ -182,16 +191,19 @@ class Wordlist {
    */
   static filter(...fields) {
     return async (req, res, next) => {
+
       // Create a new instance of the Wordlist.
       const wl = new Wordlist();
 
       try {
+
         await wl.load();
 
         // Perform a filtering operation using the new instance of the
         // Wordlist.
         req.wordlist = wl.filter(req.body, ...fields);
-      } catch (err) {
+
+      } catch(err) {
         return next(err);
       }
 

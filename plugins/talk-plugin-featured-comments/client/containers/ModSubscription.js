@@ -1,14 +1,13 @@
 import React from 'react';
-import { gql } from 'react-apollo';
-import { connect } from 'react-redux';
+import {gql} from 'react-apollo';
+import {connect} from 'react-redux';
 import Comment from 'coral-admin/src/routes/Moderation/containers/Comment';
-import { getDefinitionName } from 'coral-framework/utils';
+import {getDefinitionName} from 'coral-framework/utils';
 import truncate from 'lodash/truncate';
 import t from 'coral-framework/services/i18n';
-import { subscriptionFields } from 'coral-admin/src/routes/Moderation/graphql';
 
 function prepareNotificationText(text) {
-  return truncate(text, { length: 50 }).replace('\n', ' ');
+  return truncate(text, {length: 50}).replace('\n', ' ');
 }
 
 class ModSubscription extends React.Component {
@@ -21,18 +20,14 @@ class ModSubscription extends React.Component {
         variables: {
           assetId: this.props.data.variables.asset_id,
         },
-        updateQuery: (
-          prev,
-          { subscriptionData: { data: { commentFeatured: { user, comment } } } }
-        ) => {
-          const notifyText =
-            this.props.user.id === user.id
-              ? ''
-              : t(
-                  'talk-plugin-featured-comments.notify_featured',
-                  user.username,
-                  prepareNotificationText(comment.body)
-                );
+        updateQuery: (prev, {subscriptionData: {data: {commentFeatured: {user, comment}}}}) => {
+          const notifyText = this.props.user.id === user.id
+            ? ''
+            : t(
+              'talk-plugin-featured-comments.notify_featured',
+              user.username,
+              prepareNotificationText(comment.body),
+            );
           return this.props.handleCommentChange(prev, comment, notifyText);
         },
       },
@@ -41,33 +36,23 @@ class ModSubscription extends React.Component {
         variables: {
           assetId: this.props.data.variables.asset_id,
         },
-        updateQuery: (
-          prev,
-          {
-            subscriptionData: {
-              data: { commentUnfeatured: { user, comment } },
-            },
-          }
-        ) => {
-          const notify =
-            this.props.user.id === user.id
-              ? ''
-              : t(
-                  'talk-plugin-featured-comments.notify_unfeatured',
-                  user.username,
-                  prepareNotificationText(comment.body)
-                );
+        updateQuery: (prev, {subscriptionData: {data: {commentUnfeatured: {user, comment}}}}) => {
+          const notify = this.props.user.id === user.id
+            ? ''
+            : t(
+              'talk-plugin-featured-comments.notify_unfeatured',
+              user.username,
+              prepareNotificationText(comment.body),
+            );
           return this.props.handleCommentChange(prev, comment, notify);
-        },
+        }
       },
     ];
-    this.subscriptions = configs.map(config =>
-      this.props.data.subscribeToMore(config)
-    );
+    this.subscriptions = configs.map((config) => this.props.data.subscribeToMore(config));
   }
 
   componentWillUnmount() {
-    this.subscriptions.forEach(unsubscribe => unsubscribe());
+    this.subscriptions.forEach((unsubscribe) => unsubscribe());
   }
 
   render() {
@@ -80,7 +65,6 @@ const COMMENT_FEATURED_SUBSCRIPTION = gql`
     commentFeatured(asset_id: $assetId) {
       comment {
         ...${getDefinitionName(Comment.fragments.comment)}
-        ${subscriptionFields}
       }
       user {
         id
@@ -96,7 +80,6 @@ const COMMENT_UNFEATURED_SUBSCRIPTION = gql`
     commentUnfeatured(asset_id: $assetId){
       comment {
         ...${getDefinitionName(Comment.fragments.comment)}
-        ${subscriptionFields}
       }
       user {
         id
@@ -107,7 +90,7 @@ const COMMENT_UNFEATURED_SUBSCRIPTION = gql`
   ${Comment.fragments.comment}
 `;
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   user: state.auth.user,
 });
 

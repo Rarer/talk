@@ -6,28 +6,26 @@ const TagSchema = require('./tag');
  * The Mongo schema for linking a Tag to a Model.
  * @type {Schema}
  */
-const TagLinkSchema = new Schema(
-  {
-    // A deep copy of the tag that is the origin for this link. If the ID matches
-    // with existing tags in the global/asset context then content will be
-    // substituted.
-    tag: TagSchema,
+const TagLinkSchema = new Schema({
 
-    // The User ID of the user that assigned the status.
-    assigned_by: {
-      type: String,
-      default: null,
-    },
+  // A deep copy of the tag that is the origin for this link. If the ID matches
+  // with existing tags in the global/asset context then content will be
+  // substituted.
+  tag: TagSchema,
 
-    // The date when the tag was added to the model.
-    created_at: {
-      type: Date,
-      default: Date,
-    },
+  // The User ID of the user that assigned the status.
+  assigned_by: {
+    type: String,
+    default: null
   },
-  {
-    _id: false,
+
+  // The date when the tag was added to the model.
+  created_at: {
+    type: Date,
+    default: Date
   }
-);
+}, {
+  _id: false
+});
 
 module.exports = TagLinkSchema;

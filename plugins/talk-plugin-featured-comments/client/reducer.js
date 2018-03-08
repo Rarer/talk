@@ -1,32 +1,22 @@
-import { OPEN_FEATURED_DIALOG, CLOSE_FEATURED_DIALOG } from './constants';
+import {SHOW_TOOLTIP, HIDE_TOOLTIP} from './constants';
 
 const initialState = {
-  showFeaturedDialog: false,
-  comment: {
-    id: null,
-    tags: [],
-  },
-  asset: {
-    id: null,
-  },
+  tooltip: false
 };
 
-export default function reducer(state = initialState, action) {
+export default function featured (state = initialState, action) {
   switch (action.type) {
-    case OPEN_FEATURED_DIALOG:
-      return {
-        ...state,
-        comment: action.comment,
-        asset: action.asset,
-        showFeaturedDialog: true,
-      };
-    case CLOSE_FEATURED_DIALOG:
-      return {
-        ...state,
-        featuredCommentId: null,
-        showFeaturedDialog: false,
-      };
-    default:
-      return state;
+  case SHOW_TOOLTIP: 
+    return {
+      ...state,
+      tooltip: true
+    };
+  case HIDE_TOOLTIP: 
+    return {
+      ...state,
+      tooltip: false
+    };
+  default :
+    return state;
   }
 }

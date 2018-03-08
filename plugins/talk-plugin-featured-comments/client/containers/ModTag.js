@@ -1,16 +1,13 @@
 import ModTag from '../components/ModTag';
-import { withTags, connect } from 'plugin-api/beta/client/hocs';
-import { gql, compose } from 'react-apollo';
-import { bindActionCreators } from 'redux';
-import { openFeaturedDialog } from '../actions';
+import {withTags, connect} from 'plugin-api/beta/client/hocs';
+import {gql, compose} from 'react-apollo';
+import {bindActionCreators} from 'redux';
+import {notify} from 'plugin-api/beta/client/actions/notification';
 
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      openFeaturedDialog,
-    },
-    dispatch
-  );
+const mapDispatchToProps = (dispatch) =>
+  bindActionCreators({
+    notify,
+  }, dispatch);
 
 const fragments = {
   comment: gql`
@@ -19,11 +16,12 @@ const fragments = {
         username
       }
     }
-  `,
+  `
 };
 const enhance = compose(
+  withTags('featured', {fragments}),
   connect(null, mapDispatchToProps),
-  withTags('featured', { fragments })
 );
 
 export default enhance(ModTag);
+

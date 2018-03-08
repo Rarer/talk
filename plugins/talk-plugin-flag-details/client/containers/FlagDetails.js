@@ -1,9 +1,11 @@
-import { compose, gql } from 'react-apollo';
+import {compose, gql} from 'react-apollo';
 import FlagDetails from '../components/FlagDetails';
-import { withFragments, excludeIf } from 'plugin-api/beta/client/hocs';
-import { getSlotFragmentSpreads } from 'plugin-api/beta/client/utils';
+import {withFragments, excludeIf} from 'plugin-api/beta/client/hocs';
+import {getSlotFragmentSpreads} from 'plugin-api/beta/client/utils';
 
-const slots = ['adminCommentMoreFlagDetails'];
+const slots = [
+  'adminCommentMoreFlagDetails',
+];
 
 const enhance = compose(
   withFragments({
@@ -29,12 +31,9 @@ const enhance = compose(
         }
         ${getSlotFragmentSpreads(slots, 'comment')}
       }
-    `,
+    `
   }),
-  excludeIf(
-    ({ comment: { actions } }) =>
-      !actions.some(action => action.__typename === 'FlagAction')
-  )
+  excludeIf(({comment: {actions}}) => !actions.some((action) => action.__typename === 'FlagAction')),
 );
 
 export default enhance(FlagDetails);

@@ -1,4 +1,4 @@
-const { check } = require('perms/utils');
+const {check} = require('perms/utils');
 
 module.exports = {
   typeDefs: `
@@ -24,19 +24,19 @@ module.exports = {
   `,
   resolvers: {
     Subscription: {
-      commentFeatured: ({ user, comment }) => {
-        return { user, comment };
+      commentFeatured: ({user, comment}) => {
+        return {user, comment};
       },
-      commentUnfeatured: ({ user, comment }) => {
-        return { user, comment };
+      commentUnfeatured: ({user, comment}) => {
+        return {user, comment};
       },
     },
   },
   setupFunctions: {
     commentFeatured: (options, args) => ({
       commentFeatured: {
-        filter: ({ comment }, { user }) => {
-          if (!args.asset_id) {
+        filter: ({comment}, {user}) => {
+          if (args.asset_id === null) {
             return check(user, ['ADMIN', 'MODERATOR']);
           }
           return comment.asset_id === args.asset_id;
@@ -45,8 +45,8 @@ module.exports = {
     }),
     commentUnfeatured: (options, args) => ({
       commentUnfeatured: {
-        filter: ({ comment }, { user }) => {
-          if (!args.asset_id) {
+        filter: ({comment}, {user}) => {
+          if (args.asset_id === null) {
             return check(user, ['ADMIN', 'MODERATOR']);
           }
           return comment.asset_id === args.asset_id;
@@ -57,34 +57,27 @@ module.exports = {
   hooks: {
     RootMutation: {
       addTag: {
-        async post(
-          obj,
-          { tag: { name, id, item_type } },
-          { user, mutators: { Comment }, pubsub }
-        ) {
+        async post(obj, {tag: {name, id, item_type}}, {user, mutators: {Comment}, pubsub}, info, result) {
           if (name === 'FEATURED' && item_type === 'COMMENTS') {
-            const comment = await Comment.setStatus({
-              id: id,
-              status: 'ACCEPTED',
-            });
+            const comment = await Comment.setStatus({id: id, status: 'ACCEPTED'});
             if (comment) {
-              pubsub.publish('commentFeatured', { comment, user });
+              pubsub.publish('commentFeatured', {comment, user});
             }
+            return result;
           }
+          return result;
         },
       },
       removeTag: {
-        async post(
-          obj,
-          { tag: { name, id, item_type } },
-          { user, loaders: { Comments }, pubsub }
-        ) {
+        async post(obj, {tag: {name, id, item_type}}, {user, loaders: {Comments}, pubsub}, info, result) {
           if (name === 'FEATURED' && item_type === 'COMMENTS') {
             const comment = await Comments.get.load(id);
             if (comment) {
-              pubsub.publish('commentUnfeatured', { comment, user });
+              pubsub.publish('commentUnfeatured', {comment, user});
             }
+            return result;
           }
+          return result;
         },
       },
     },
@@ -95,10 +88,10 @@ module.exports = {
       permissions: {
         public: true,
         self: false,
-        roles: ['ADMIN', 'MODERATOR'],
+        roles: []
       },
       models: ['COMMENTS'],
-      created_at: new Date(),
-    },
-  ],
+      created_at: new Date()
+    }
+  ]
 };

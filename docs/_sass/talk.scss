@@ -16,25 +16,11 @@ body {
 }
 
 h1 {
-  font-size: 2rem;
+  font-size: 1.7em;
 }
 
-h2 {
+h2, h3, h4 {
   margin: 1.6em 0 0.8em;
-  font-size: 1.75rem;
-  font-weight: 600;
-}
-
-h3 {
-  margin: 1.6em 0 0.8em;
-  font-size: 1.5rem;
-  font-weight: 500;
-}
-
-h4 {
-  margin: 1.6em 0 0.8em;
-  font-size: 1.2rem;
-  font-weight: 500;
 }
 
 .btn-coral {
@@ -50,13 +36,13 @@ h4 {
   }
 }
 
-.param {
-  font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
 article.configuration {
-  h2, .toc {
-    @extend .param;
+  h2 {
+    font-weight: bolder;
+  }
+
+  h2, .toc, .param {
+    font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   }
 }
 
@@ -241,9 +227,10 @@ pre {
 }
 
 .coral-link {
-  border-bottom: 1px solid $coral_button_border_color;
+  border-bottom: 2px dotted $coral_button_border_color;
   color: $coral_button_color;
   text-decoration: none;
+  font-weight: bold;
 
   &:hover {
     color: $coral_button_hover_color;
@@ -264,17 +251,13 @@ pre {
 .toc {
   a {
     @extend .coral-link;
-    border-bottom: none !important;
+    border-bottom: none;
   }
 }
 
 .content {
   article {
     p a:not(.plain-link) {
-      @extend .coral-link;
-    }
-    ul:not(.toc__menu) li a,
-    ol li a {
       @extend .coral-link;
     }
   }
@@ -422,3 +405,4 @@ a.brand {
     }
   }
 }
+

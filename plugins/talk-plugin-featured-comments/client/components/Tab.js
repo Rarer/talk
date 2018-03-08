@@ -1,27 +1,18 @@
 import React from 'react';
-import { TabCount } from 'plugin-api/beta/client/components/ui';
+import {TabCount} from 'plugin-api/beta/client/components/ui';
 import InfoIcon from './InfoIcon';
-import { t } from 'plugin-api/beta/client/services';
+import {t} from 'plugin-api/beta/client/services';
 import Tooltip from './Tooltip';
-import PropTypes from 'prop-types';
 
-const Tab = ({ active, hover, featuredCommentsCount }) => {
+export default ({active, asset: {featuredCommentsCount}, tooltip, ...props}) => { 
   return (
-    <span>
+    <span 
+      onMouseEnter={props.showTooltip}
+      onMouseLeave={props.hideTooltip} >
       {t('talk-plugin-featured-comments.featured')}
-      <TabCount active={active} sub>
-        {featuredCommentsCount}
-      </TabCount>
-      <InfoIcon hover={hover} />
-      {hover && <Tooltip />}
+      <TabCount active={active} sub>{featuredCommentsCount}</TabCount>
+      <InfoIcon tooltip={tooltip} /> 
+      {tooltip && <Tooltip />} 
     </span>
   );
 };
-
-Tab.propTypes = {
-  active: PropTypes.bool,
-  hover: PropTypes.bool,
-  featuredCommentsCount: PropTypes.number.isRequired,
-};
-
-export default Tab;

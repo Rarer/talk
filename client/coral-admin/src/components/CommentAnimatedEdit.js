@@ -1,10 +1,10 @@
 import React from 'react';
-import { murmur3 } from 'murmurhash-js';
-import { CSSTransitionGroup } from 'react-transition-group';
+import {murmur3} from 'murmurhash-js';
+import {CSSTransitionGroup} from 'react-transition-group';
 import styles from './CommentAnimatedEdit.css';
 import PropTypes from 'prop-types';
 
-const CommentAnimatedEdit = ({ children, body }) => {
+const CommentBodyHighlighter = ({children, body}) => {
   return (
     <CSSTransitionGroup
       component={'div'}
@@ -20,16 +20,14 @@ const CommentAnimatedEdit = ({ children, body }) => {
       transitionEnterTimeout={3600}
       transitionLeaveTimeout={2800}
     >
-      {React.cloneElement(React.Children.only(children), {
-        key: murmur3(body),
-      })}
+      {React.cloneElement(React.Children.only(children), {key: murmur3(body)})}
     </CSSTransitionGroup>
   );
 };
 
-CommentAnimatedEdit.propTypes = {
+CommentBodyHighlighter.propTypes = {
   children: PropTypes.node,
   body: PropTypes.string,
 };
 
-export default CommentAnimatedEdit;
+export default CommentBodyHighlighter;

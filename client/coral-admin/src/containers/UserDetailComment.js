@@ -1,23 +1,14 @@
-import { gql } from 'react-apollo';
+import {gql} from 'react-apollo';
 import UserDetailComment from '../components/UserDetailComment';
 import withFragments from 'coral-framework/hocs/withFragments';
-import { getDefinitionName } from 'coral-framework/utils';
+import {getDefinitionName} from 'coral-framework/utils';
 import CommentLabels from './CommentLabels';
 import CommentDetails from './CommentDetails';
-import { getSlotFragmentSpreads } from 'coral-framework/utils';
-
-const slots = ['userDetailCommentContent'];
 
 export default withFragments({
   root: gql`
     fragment CoralAdmin_UserDetailComment_root on RootQuery {
-      settings {
-        wordlist {
-          banned
-          suspect
-        }
-      }
-      ${getSlotFragmentSpreads(slots, 'root')}
+      __typename
       ...${getDefinitionName(CommentLabels.fragments.root)}
       ...${getDefinitionName(CommentDetails.fragments.root)}
     }
@@ -39,14 +30,10 @@ export default withFragments({
       editing {
         edited
       }
-      status_history {
-        type
-      }
-      ${getSlotFragmentSpreads(slots, 'comment')}
       ...${getDefinitionName(CommentLabels.fragments.comment)}
       ...${getDefinitionName(CommentDetails.fragments.comment)}
     }
     ${CommentLabels.fragments.comment}
     ${CommentDetails.fragments.comment}
-  `,
+  `
 })(UserDetailComment);

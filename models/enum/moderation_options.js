@@ -1,1 +1,4 @@
-module.exports = ['PRE', 'POST'];
+module.exports = [
+  'PRE',
+  'POST'
+];

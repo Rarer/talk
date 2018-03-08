@@ -4,15 +4,7 @@ import Icon from './Icon';
 
 export default class Button extends React.Component {
   render() {
-    const {
-      cStyle = 'local',
-      children,
-      className,
-      raised = false,
-      full = false,
-      icon = '',
-      ...props
-    } = this.props;
+    const {cStyle = 'local', children, className, raised = false, full = false, icon = '', ...props} = this.props;
     return (
       <button
         className={`

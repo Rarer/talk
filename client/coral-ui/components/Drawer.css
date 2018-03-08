@@ -23,7 +23,6 @@
 }
 
 .closeButton {
-  composes: buttonReset from 'coral-framework/styles/reset.css';
   position: absolute;
   width: 40px;
   height: 40px;
@@ -35,13 +34,8 @@
   top: 60px;
   box-shadow: -1px 3px 4px 0px rgba(0,0,0,0.15);
   text-align: center;
+  padding-top: 10px;
   cursor: pointer;
-
-  .icon {
-    color: #595959;
-    font-size: 25px;
-    display: block;
-  }
 
   &:hover {
     color: #ccc;

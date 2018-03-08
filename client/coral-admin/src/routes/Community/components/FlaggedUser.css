@@ -9,17 +9,13 @@
   min-width: 400px;
   margin: 0 auto;
   position: relative;
-  transition: background 200ms, box-shadow 200ms, margin-bottom 200ms;
-  padding: 10px 0 10px;
+  transition: box-shadow 200ms, margin-bottom 200ms;
+  padding: 10px 0 0;
   min-height: 220px;
 
   &:hover {
     box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   }
-}
-
-.dangling {
-  background-color: #efefef;
 }
 
 .rootSelected {

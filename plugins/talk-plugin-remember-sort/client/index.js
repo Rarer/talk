@@ -1,13 +1,11 @@
-import { setSort } from 'plugin-api/beta/client/actions/stream';
-import {
-  sortOrderSelector,
-  sortBySelector,
-} from 'plugin-api/beta/client/selectors/stream';
+import {setSort} from 'plugin-api/beta/client/actions/stream';
+import {sortOrderSelector, sortBySelector} from 'plugin-api/beta/client/selectors/stream';
 
 const STORAGE_PATH = 'talkPluginRememberSort';
 
 export default {
-  init: async ({ store, pymLocalStorage, introspection }) => {
+  init: async ({store, pymStorage, introspection}) => {
+
     // TODO: workaround as this plugin is included in any target and
     // embeds (e.g. admin), but should only be included inside the stream.
 
@@ -16,10 +14,10 @@ export default {
       return;
     }
 
-    // We use pymLocalStorage instead to persist the data directly on the parent page,
+    // We use pymStorage instead to persist the data directly on the parent page,
     // in order to mitigate strict cross domain security settings.
 
-    let sort = JSON.parse(await pymLocalStorage.getItem(STORAGE_PATH));
+    let sort = JSON.parse(await pymStorage.getItem(STORAGE_PATH));
     if (
       sort &&
       introspection.isValidEnumValue('SORT_ORDER', sort.sortOrder) &&
@@ -34,9 +32,9 @@ export default {
 
       // Save sorting choice to storage if it has changed.
       if (!sort || sort.sortOrder !== sortOrder || sort.sortBy !== sortBy) {
-        sort = { sortOrder, sortBy };
-        pymLocalStorage.setItem(STORAGE_PATH, JSON.stringify(sort));
+        sort = {sortOrder, sortBy};
+        pymStorage.setItem(STORAGE_PATH, JSON.stringify(sort));
       }
     });
-  },
+  }
 };

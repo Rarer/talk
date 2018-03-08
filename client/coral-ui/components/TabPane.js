@@ -10,13 +10,17 @@ function getRootClassName(className) {
  * The `TabPane` component is used inside the `TabContent` component to render
  * the content of a `Tab`.
  */
-const TabPane = ({ children, className, tabId: _a, sub: _b, ...rest }) => (
-  <div {...rest} className={getRootClassName(className)}>
+const TabPane = ({children, className, tabId: _a, sub: _b, ...rest}) => (
+  <div
+    {...rest}
+    className={getRootClassName(className)}
+  >
     {children}
   </div>
 );
 
 TabPane.propTypes = {
+
   // className to be added to the root element.
   className: PropTypes.string,
 

@@ -1,3 +1,5 @@
-const Tag = {};
+const Tag = {
+
+};
 
 module.exports = Tag;
